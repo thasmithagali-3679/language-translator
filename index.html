@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Language Translator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: white;
+      width: 95%;
+      max-width: 900px;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+    h1 {
+      text-align: center;
+      color: #1f4fa3;
+      margin-bottom: 8px;
+    }
+    p.sub {
+      text-align: center;
+      color: #666;
+      margin-bottom: 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 120px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    textarea, select, button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #d0d7e2;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    textarea {
+      min-height: 220px;
+      resize: vertical;
+    }
+    .middle {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 40px;
+      color: #1f4fa3;
+      height: 220px;
+    }
+    .output {
+      min-height: 220px;
+      background: #f8fbff;
+      border: 1px solid #d0d7e2;
+      border-radius: 10px;
+      padding: 12px;
+      white-space: pre-wrap;
+    }
+    .controls {
+      margin-top: 18px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #1f77f0;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #155ec1;
+    }
+    .status {
+      margin-top: 12px;
+      color: #444;
+      font-size: 14px;
+    }
+    code {
+      background: #eef3ff;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .middle {
+        height: auto;
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌍 Language Translator</h1>
+    <p class="sub">Mobile-friendly Vercel version using your deployed API</p>
+
+    <div class="grid">
+      <div>
+        <h3>Input</h3>
+        <textarea id="inputText" placeholder="Type something here..."></textarea>
+        <br /><br />
+        <label for="sourceLang">Source Language</label>
+        <select id="sourceLang"></select>
+      </div>
+
+      <div class="middle">⬇️</div>
+
+      <div>
+        <h3>Output</h3>
+        <div id="outputText" class="output">Translated text will appear here...</div>
+        <br />
+        <label for="targetLang">Target Language</label>
+        <select id="targetLang"></select>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="translateBtn">Translate</button>
+      <button id="copyBtn" type="button">Copy Output</button>
+    </div>
+
+    <div class="status" id="status">API path: <code>/api/translate</code></div>
+  </div>
+
+  <script>
+    const languages = {
+      "English": "en",
+      "Spanish": "es",
+      "French": "fr",
+      "German": "de",
+      "Italian": "it",
+      "Portuguese": "pt",
+      "Dutch": "nl",
+      "Russian": "ru",
+      "Chinese (Simplified)": "zh-cn",
+      "Chinese (Traditional)": "zh-tw",
+      "Japanese": "ja",
+      "Korean": "ko",
+      "Arabic": "ar",
+      "Hindi": "hi",
+      "Turkish": "tr",
+      "Polish": "pl",
+      "Swedish": "sv",
+      "Greek": "el",
+      "Hebrew": "he",
+      "Vietnamese": "vi",
+      "Thai": "th",
+      "Indonesian": "id",
+      "Filipino": "tl",
+      "Urdu": "ur"
+    };
+
+    const sourceLang = document.getElementById('sourceLang');
+    const targetLang = document.getElementById('targetLang');
+    const inputText = document.getElementById('inputText');
+    const outputText = document.getElementById('outputText');
+    const status = document.getElementById('status');
+
+    Object.entries(languages).forEach(([name, code]) => {
+      const sourceOption = document.createElement('option');
+      sourceOption.value = code;
+      sourceOption.textContent = name;
+      if (code === 'en') sourceOption.selected = true;
+      sourceLang.appendChild(sourceOption);
+
+      const targetOption = document.createElement('option');
+      targetOption.value = code;
+      targetOption.textContent = name;
+      if (code === 'es') targetOption.selected = true;
+      targetLang.appendChild(targetOption);
+    });
+
+    document.getElementById('translateBtn').addEventListener('click', async () => {
+      const text = inputText.value.trim();
+      if (!text) {
+        status.textContent = 'Please enter some text to translate.';
+        return;
+      }
+
+      outputText.textContent = 'Translating...';
+      status.textContent = 'Calling Vercel API...';
+
+      try {
+        const response = await fetch('/api/translate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            text,
+            source: sourceLang.value,
+            target: targetLang.value
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Translation failed');
+        }
+
+        outputText.textContent = data.translated;
+        status.textContent = `Translated from ${data.source_language} to ${data.target_language}`;
+      } catch (error) {
+        outputText.textContent = 'Translation failed.';
+        status.textContent = 'Error: ' + error.message;
+      }
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(outputText.textContent);
+        status.textContent = 'Translated text copied to clipboard.';
+      } catch (error) {
+        status.textContent = 'Could not copy text.';
+      }
+    });
+  </script>
+</body>
+</html>
