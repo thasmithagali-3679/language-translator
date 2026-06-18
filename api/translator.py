@@ -1,1 +1,109 @@
-from http.server import BaseHTTPRequestHandler\nimport json\nfrom googletrans import Translator\nfrom urllib.parse import parse_qs\n\ntranslator = Translator()\n\nclass handler(BaseHTTPRequestHandler):\n    def do_GET(self):\n        # Parse query parameters\n        query_params = parse_qs(self.path.split('?')[1] if '?' in self.path else '')\n        \n        text = query_params.get('text', [''])[0]\n        source_lang = query_params.get('source', ['en'])[0]\n        target_lang = query_params.get('target', ['es'])[0]\n        \n        if not text:\n            self.send_response(400)\n            self.send_header('Content-type', 'application/json')\n            self.send_header('Access-Control-Allow-Origin', '*')\n            self.end_headers()\n            self.wfile.write(json.dumps({'error': 'Text parameter is required'}).encode())\n            return\n        \n        try:\n            result = translator.translate(text, src_language=source_lang, dest_language=target_lang)\n            \n            self.send_response(200)\n            self.send_header('Content-type', 'application/json')\n            self.send_header('Access-Control-Allow-Origin', '*')\n            self.end_headers()\n            \n            response = {\n                'success': True,\n                'original': text,\n                'translated': result['text'],\n                'source_language': source_lang,\n                'target_language': target_lang\n            }\n            \n            self.wfile.write(json.dumps(response).encode())\n        \n        except Exception as e:\n            self.send_response(500)\n            self.send_header('Content-type', 'application/json')\n            self.send_header('Access-Control-Allow-Origin', '*')\n            self.end_headers()\n            \n            response = {\n                'success': False,\n                'error': str(e)\n            }\n            \n            self.wfile.write(json.dumps(response).encode())\n    \n    def do_POST(self):\n        content_length = int(self.headers.get('Content-Length', 0))\n        body = self.rfile.read(content_length)\n        \n        try:\n            data = json.loads(body.decode())\n            text = data.get('text', '')\n            source_lang = data.get('source', 'en')\n            target_lang = data.get('target', 'es')\n            \n            if not text:\n                self.send_response(400)\n                self.send_header('Content-type', 'application/json')\n                self.send_header('Access-Control-Allow-Origin', '*')\n                self.end_headers()\n                self.wfile.write(json.dumps({'error': 'Text field is required'}).encode())\n                return\n            \n            result = translator.translate(text, src_language=source_lang, dest_language=target_lang)\n            \n            self.send_response(200)\n            self.send_header('Content-type', 'application/json')\n            self.send_header('Access-Control-Allow-Origin', '*')\n            self.end_headers()\n            \n            response = {\n                'success': True,\n                'original': text,\n                'translated': result['text'],\n                'source_language': source_lang,\n                'target_language': target_lang\n            }\n            \n            self.wfile.write(json.dumps(response).encode())\n        \n        except json.JSONDecodeError:\n            self.send_response(400)\n            self.send_header('Content-type', 'application/json')\n            self.send_header('Access-Control-Allow-Origin', '*')\n            self.end_headers()\n            self.wfile.write(json.dumps({'error': 'Invalid JSON'}).encode())\n        \n        except Exception as e:\n            self.send_response(500)\n            self.send_header('Content-type', 'application/json')\n            self.send_header('Access-Control-Allow-Origin', '*')\n            self.end_headers()\n            self.wfile.write(json.dumps({'error': str(e)}).encode())\n    \n    def do_OPTIONS(self):\n        self.send_response(200)\n        self.send_header('Access-Control-Allow-Origin', '*')\n        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')\n        self.send_header('Access-Control-Allow-Headers', 'Content-Type')\n        self.end_headers()
+from http.server import BaseHTTPRequestHandler
+import json
+from googletrans import Translator
+from urllib.parse import parse_qs
+
+translator = Translator()
+
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        query_params = parse_qs(self.path.split('?')[1] if '?' in self.path else '')
+        
+        text = query_params.get('text', [''])[0]
+        source_lang = query_params.get('source', ['en'])[0]
+        target_lang = query_params.get('target', ['es'])[0]
+        
+        if not text:
+            self.send_response(400)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': 'Text parameter is required'}).encode())
+            return
+        
+        try:
+            result = translator.translate(text, src_language=source_lang, dest_language=target_lang)
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            response = {
+                'success': True,
+                'original': text,
+                'translated': result['text'],
+                'source_language': source_lang,
+                'target_language': target_lang
+            }
+            
+            self.wfile.write(json.dumps(response).encode())
+        
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            response = {
+                'success': False,
+                'error': str(e)
+            }
+            
+            self.wfile.write(json.dumps(response).encode())
+    
+    def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length)
+        
+        try:
+            data = json.loads(body.decode())
+            text = data.get('text', '')
+            source_lang = data.get('source', 'en')
+            target_lang = data.get('target', 'es')
+            
+            if not text:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': 'Text field is required'}).encode())
+                return
+            
+            result = translator.translate(text, src_language=source_lang, dest_language=target_lang)
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            response = {
+                'success': True,
+                'original': text,
+                'translated': result['text'],
+                'source_language': source_lang,
+                'target_language': target_lang
+            }
+            
+            self.wfile.write(json.dumps(response).encode())
+        
+        except json.JSONDecodeError:
+            self.send_response(400)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': 'Invalid JSON'}).encode())
+        
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': str(e)}).encode())
+    
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
